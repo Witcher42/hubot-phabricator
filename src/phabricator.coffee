@@ -284,8 +284,6 @@ module.exports = (robot) ->
         unless result.length
           return
 
-        console.log result
-
         for review in result
           icon = switch review.status
             when STATUS.NEEDS_REVIEW
@@ -328,8 +326,7 @@ module.exports = (robot) ->
                     .replace('<', '&lt;')
                     .replace('>', '&gt;')
                 )
-                console.log 'sendmessage', msgText
-                # robot.messageRoom username, msgText
+                robot.messageRoom username, msgText
             )
     10000
   )
