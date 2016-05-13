@@ -15,7 +15,7 @@
 #   hubot my reviews - Alias for `phabricator my reviews`
 #   hubot phabricator whoami - Displays your linked Phabricator username guessed based on email
 #   hubot phabricator i am <username> - Sets your linked Phabricator username
-#   hubot phabricator ping - Pings Phabricator's API  
+#   hubot phabricator ping - Pings Phabricator's API
 #   hubot phabricator update signature - Updates session key and connection in Hubot's brain
 #   phabricator subscribe - Subscribes to important actions (**use only in DM**)
 #   phabricator unsubscribe - Unsubscribes from important actions (**use only in DM**)
@@ -46,7 +46,7 @@ STATUS =
   ABANDONED: '4'
 
 modifiedAfter = (lastChecked, value) ->
-  value.dateModified >= lastChecked
+  value.dateModified > lastChecked
 
 _performSignedConduitCall = (robot, endpoint, signature, params) ->
   return (callback) -> # callback :: (result, err) ->
@@ -269,6 +269,8 @@ module.exports = (robot) ->
           clearInterval subIntervalId
           return
 
+        maxOne = _.maxBy(result, (o) -> o.dateModified) if result
+
         if robot.brain.get keySubLast
           lastChecked = robot.brain.get keySubLast
           result = _.filter(
@@ -276,10 +278,13 @@ module.exports = (robot) ->
             modifiedAfter.bind null, lastChecked
           )
 
-        robot.brain.set keySubLast, parseInt(Date.now() / 1000, 10)
+        currentChecked = if maxOne then maxOne.dateModified else Date.now() / 100
+        robot.brain.set keySubLast, parseInt(currentChecked, 10)
 
         unless result.length
           return
+
+        console.log result
 
         for review in result
           icon = switch review.status
@@ -316,16 +321,17 @@ module.exports = (robot) ->
             .map('name')
             .each(
               (username) ->
+                robot.logger.info username
                 msgText = (
                   "#{icon} #{review.uri}\n\t#{review.title}"
                     .replace('&', '&amp;')
                     .replace('<', '&lt;')
                     .replace('>', '&gt;')
                 )
-                robot.messageRoom username, msgText
+                console.log 'sendmessage', msgText
+                # robot.messageRoom username, msgText
             )
-            .value()
-    30000
+    10000
   )
 
   robot.respond /pha(bricator)? unsub(scribe)?/i, (msg) ->
